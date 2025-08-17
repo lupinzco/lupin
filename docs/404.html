@@ -21,13 +21,61 @@
     </div>
   </div>
   <script>
-    // GitHub Pages SPA 대응: 존재하지 않는 경로는 앱 루트로 리다이렉트
-    (function() {
-      var target = '/lupin/';
-      // 500ms 후 자동 이동 (사용자가 버튼으로 즉시 이동도 가능)
-      setTimeout(function() {
+    // GitHub Pages SPA + App handoff
+    (function () {
+      function getBase() { return '/lupin/'; }
+
+      function getId() {
+        var q = new URLSearchParams(window.location.search);
+        var id = q.get('id');
+        if (id) return id;
+        var hash = window.location.hash || '';
+        // #id
+        if (/^#\w+/.test(hash)) return hash.slice(1);
+        // #/post/123
+        var m = hash.match(/^#\/?post\/(\w[\w-]*)/);
+        return m ? m[1] : null;
+      }
+
+      function openWeb(id) {
+        var base = getBase();
+        var target = id ? (base + '#/post/' + encodeURIComponent(id)) : base;
         window.location.replace(target);
-      }, 500);
+      }
+
+      function tryOpenApp(id) {
+        if (!id) return false;
+        var schemeUrl = 'lupin://post/' + encodeURIComponent(id);
+        var intentUrl = 'intent://post/' + encodeURIComponent(id) +
+          '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(location.origin + getBase() + '#/post/' + encodeURIComponent(id)) + ';end';
+
+        var started = Date.now();
+        var timer = setTimeout(function () {
+          // If still here within 1.2s, try Android intent as secondary
+          // Then fallback to web
+          if (/(Android)/i.test(navigator.userAgent)) {
+            try { window.location.href = intentUrl; } catch (_) {}
+            setTimeout(function(){ openWeb(id); }, 800);
+          } else {
+            openWeb(id);
+          }
+        }, 1200);
+
+        // Prefer direct navigation to increase success in in-app browsers
+        try { window.location.href = schemeUrl; } catch (_) {}
+
+        // If visibility changes (app switch), cancel fallback
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) clearTimeout(timer);
+        });
+        return true;
+      }
+
+      var id = getId();
+      // Attempt app handoff first when possible
+      if (!tryOpenApp(id)) {
+        openWeb(id);
+      }
     })();
   </script>
 </body>
