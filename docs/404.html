@@ -16,7 +16,7 @@
   <div class="wrap">
     <div class="card">
       <h1>페이지를 찾을 수 없습니다</h1>
-      <p class="muted">잠시 후 홈으로 이동합니다...</p>
+      <p class="muted">앱으로 이동 중…</p>
       <a id="homeLink" class="btn" href="/lupin/">홈으로 가기</a>
     </div>
   </div>
@@ -57,27 +57,33 @@
         var intentUrl = 'intent://' + (id ? ('post/' + encodeURIComponent(id)) : '') +
           '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(fallbackAndroid) + ';end';
 
-        // Android: intent 먼저 (항상 host 포함)
+        // Android: intent 먼저 (항상 host 포함) + 0.7s 안내 노출 후 전환
         if (isAndroid) {
           var intentFirst = 'intent://post' + (id ? ('/' + encodeURIComponent(id)) : '') +
             '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(fallbackAndroid) + ';end';
-          try { window.location.href = intentFirst; } catch (_) {}
+          setTimeout(function(){
+            try { window.location.href = intentFirst; } catch (_) {}
+          }, 700);
           return true;
         }
 
-        // iOS 등: 스킴 우선 → 실패 시 App Store 또는 웹 폴백
+        // iOS 등: 0.7s 안내 노출 → 스킴 시도 → 실패 시 App Store 또는 웹 폴백
         var started = Date.now();
-        var timer = setTimeout(function () {
-          if (IOS_STORE && typeof IOS_STORE === 'string' && IOS_STORE.length > 0) {
-            try { window.location.href = IOS_STORE; } catch (_) { openWeb(id); }
-          } else {
-            openWeb(id);
-          }
-        }, 1200);
+        var timer;
+        setTimeout(function(){
+          timer = setTimeout(function () {
+            if (IOS_STORE && typeof IOS_STORE === 'string' && IOS_STORE.length > 0) {
+              try { window.location.href = IOS_STORE; } catch (_) { openWeb(id); }
+            } else {
+              openWeb(id);
+            }
+          }, 1200);
 
-        try { window.location.href = schemeUrl; } catch (_) {}
+          try { window.location.href = schemeUrl; } catch (_) {}
+        }, 700);
+
         document.addEventListener('visibilitychange', function () {
-          if (document.hidden) clearTimeout(timer);
+          if (document.hidden && timer) clearTimeout(timer);
         });
         return true;
       }
