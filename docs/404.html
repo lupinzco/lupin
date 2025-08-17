@@ -24,6 +24,9 @@
     // GitHub Pages SPA + App handoff
     (function () {
       function getBase() { return '/lupin/'; }
+      // Store URLs (iOS URL은 실제 앱 ID로 교체 필요)
+      var ANDROID_STORE = 'https://play.google.com/store/apps/details?id=com.lupin.app';
+      var IOS_STORE = ''; // 예: 'https://apps.apple.com/app/id1234567890'
 
       function getId() {
         var q = new URLSearchParams(window.location.search);
@@ -44,20 +47,30 @@
       }
 
       function tryOpenApp(id) {
-        if (!id) return false;
-        var schemeUrl = 'lupin://post/' + encodeURIComponent(id);
-        var intentUrl = 'intent://post/' + encodeURIComponent(id) +
-          '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(location.origin + getBase() + '#/post/' + encodeURIComponent(id)) + ';end';
+        var base = getBase();
+        var isAndroid = /(Android)/i.test(navigator.userAgent);
+        // If id가 없거나 잘못된 경우에도 앱을 홈으로 실행 시도
+        var schemeUrl = id ? ('lupin://post/' + encodeURIComponent(id)) : 'lupin://';
+        var fallbackWeb = id ? (location.origin + base + '#/post/' + encodeURIComponent(id)) : (location.origin + base);
+        // Android: 미설치 시 Play 스토어로 이동
+        var fallbackAndroid = ANDROID_STORE || fallbackWeb;
+        var intentUrl = 'intent://' + (id ? ('post/' + encodeURIComponent(id)) : '') +
+          '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(fallbackAndroid) + ';end';
 
         var started = Date.now();
         var timer = setTimeout(function () {
           // If still here within 1.2s, try Android intent as secondary
-          // Then fallback to web
-          if (/(Android)/i.test(navigator.userAgent)) {
+          // Then fallback to web (홈 또는 게시글)
+          if (isAndroid) {
             try { window.location.href = intentUrl; } catch (_) {}
-            setTimeout(function(){ openWeb(id); }, 800);
+            // intent의 fallback이 Play 스토어로 처리되므로 추가 웹 폴백은 대기
           } else {
-            openWeb(id);
+            // iOS: 미설치 시 App Store로 보내고, 미설치 URL이 없다면 웹 폴백
+            if (IOS_STORE && typeof IOS_STORE === 'string' && IOS_STORE.length > 0) {
+              try { window.location.href = IOS_STORE; } catch (_) { openWeb(id); }
+            } else {
+              openWeb(id);
+            }
           }
         }, 1200);
 
