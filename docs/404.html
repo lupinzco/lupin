@@ -50,7 +50,7 @@
         var base = getBase();
         var isAndroid = /(Android)/i.test(navigator.userAgent);
         // If id가 없거나 잘못된 경우에도 앱을 홈으로 실행 시도
-        var schemeUrl = id ? ('lupin://post/' + encodeURIComponent(id)) : 'lupin://';
+        var schemeUrl = id ? ('lupin://post/' + encodeURIComponent(id)) : 'lupin://post';
         var fallbackWeb = id ? (location.origin + base + '#/post/' + encodeURIComponent(id)) : (location.origin + base);
         // Android: 미설치 시 Play 스토어로 이동
         var fallbackAndroid = ANDROID_STORE || fallbackWeb;

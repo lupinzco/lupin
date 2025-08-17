@@ -1,6 +1,12 @@
 (function(){
   const $ = (id) => document.getElementById(id);
   const q = new URLSearchParams(window.location.search);
+  const UA = navigator.userAgent || '';
+  const IS_ANDROID = /Android/i.test(UA);
+
+  // 스토어 URL (iOS는 실제 App Store URL로 교체 필요)
+  const ANDROID_STORE = 'https://play.google.com/store/apps/details?id=com.lupin.app';
+  const IOS_STORE = ''; // 예: 'https://apps.apple.com/app/id1234567890'
 
   // id 추출: ?id= 우선, 없으면 #id 또는 #/post/123 패턴 보조
   function extractId(){
@@ -15,62 +21,51 @@
     return null;
   }
 
-  function showFallback(){
-    $('loading').style.display = 'none';
-    $('fallback').style.display = 'block';
-  }
-
   function openWeb(id){
-    // SPA 해시 라우팅으로 이동(웹용): /#/post/{id}
-    const base = window.location.origin + window.location.pathname.replace(/post\/index\.html$/, '');
-    window.location.href = base + '#/post/' + encodeURIComponent(id || '');
+    // SPA 해시 라우팅으로 이동(웹용): 홈 또는 /#/post/{id}
+    const base = (function(){
+      // /lupin/post/index.html → /lupin/
+      const href = window.location.href;
+      const m = href.match(/^(https?:\/\/[^/]+)(\/lupin\/)/);
+      return m ? (m[2]) : '/lupin/';
+    })();
+    const origin = window.location.origin;
+    const target = id ? (origin + base + '#/post/' + encodeURIComponent(id)) : (origin + base);
+    window.location.replace(target);
   }
 
   $('open-web')?.addEventListener('click', () => openWeb(extractId()));
 
-  // 메인 플로우: 앱 열기 → 실패 시 앱/유니버설 링크 → 실패 시 폴백
+  // 메인 플로우: 앱 열기 → 실패 시 스토어 → 그 외 웹 폴백
   function tryOpen(){
     const id = extractId();
-    // 앱으로 열기 필요값이 없으면 바로 폴백
-    if (!id){
-      showFallback();
-      return;
-    }
+    const schemeUrl = id ? (`lupin://post/${encodeURIComponent(id)}`) : 'lupin://post';
 
-    const schemeUrl = `lupin://post/${encodeURIComponent(id)}`;
-    const appLinkUrl = `https://lupinzco.github.io/lupin/post/${encodeURIComponent(id)}`;
+    // Android intent: 미설치 시 Play 스토어로 유도
+    const fallbackWeb = (window.location.origin + '/lupin/' + (id ? ('#/post/' + encodeURIComponent(id)) : ''));
+    const intentUrl = 'intent://' + (id ? ('post/' + encodeURIComponent(id)) : '') +
+      '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(ANDROID_STORE || fallbackWeb) + ';end';
 
-    let didHide = false;
     const start = Date.now();
-
-    // 1) 커스텀 스킴 시도
-    function openScheme(){
-      // 일부 브라우저에서 iframe 방식이 유리
-      const ifr = document.createElement('iframe');
-      ifr.style.display = 'none';
-      ifr.src = schemeUrl;
-      document.body.appendChild(ifr);
-
-      // 1~1.5초 내 포그라운드 유지되면 실패로 간주하고 2단계 진행
-      setTimeout(() => {
-        if (Date.now() - start < 1600 && !didHide){
-          window.location.href = appLinkUrl; // 2) 앱/유니버설 링크 시도
-          // 2단계 이후에도 여전히 설치 안 된 경우 몇 초 뒤 폴백
-          setTimeout(() => {
-            showFallback();
-          }, 1200);
+    const timer = setTimeout(() => {
+      if (IS_ANDROID) {
+        try { window.location.href = intentUrl; } catch(_) {}
+      } else {
+        if (IOS_STORE) {
+          try { window.location.href = IOS_STORE; } catch(_) { openWeb(id); }
+        } else {
+          openWeb(id);
         }
-      }, 1200);
-    }
-
-    // iOS Safari에서 페이지가 백그라운드로 가면 visibilitychange가 발생하는 경우가 있어 감지용
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        didHide = true; // 앱 전환으로 추정 → 폴백 중지
       }
-    });
+    }, 1200);
 
-    openScheme();
+    // 스킴 우선 시도
+    try { window.location.href = schemeUrl; } catch(_) {}
+
+    // 앱 전환 시 타이머 해제
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearTimeout(timer);
+    }, { once: true });
   }
 
   // 시작

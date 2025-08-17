@@ -96,6 +96,38 @@
           }
     }
   </style>
+  <script>
+    // App-first handoff for home: open app if installed; else go to store.
+    (function(){
+      var UA = navigator.userAgent || '';
+      var IS_ANDROID = /Android/i.test(UA);
+      var ANDROID_STORE = 'https://play.google.com/store/apps/details?id=com.lupin.app';
+      var IOS_STORE = ''; // 예: 'https://apps.apple.com/app/id1234567890'
+
+      function tryOpenHome(){
+        var schemeUrl = 'lupin://post'; // matches AndroidManifest (scheme=lupin, host=post)
+        var intentUrl = 'intent://' + '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(ANDROID_STORE) + ';end';
+
+        var timer = setTimeout(function(){
+          if (IS_ANDROID) {
+            try { window.location.href = intentUrl; } catch(_) {}
+          } else if (IOS_STORE) {
+            try { window.location.href = IOS_STORE; } catch(_) {}
+          }
+        }, 1200);
+
+        try { window.location.href = schemeUrl; } catch(_) {}
+
+        document.addEventListener('visibilitychange', function onVis(){
+          if (document.hidden) clearTimeout(timer);
+          document.removeEventListener('visibilitychange', onVis);
+        });
+      }
+
+      // Try immediately; do not block Flutter web bootstrap.
+      tryOpenHome();
+    })();
+  </script>
   <script id="splash-screen-script">
     function removeSplashFromWeb() {
       document.getElementById("splash")?.remove();
