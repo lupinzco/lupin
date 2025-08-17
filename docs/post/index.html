@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="게시물 보기" />
+  <title>Lupin</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <!-- Open Graph (카카오 미리보기용) → 정적 값 필요 -->
+  <meta property="og:title" content="게시물" />
+  <meta property="og:description" content="게시물을 확인해보세요!" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="" />
+  <meta property="og:image" content="" />
+</head>
+<body>
+  <!-- 로딩 화면 -->
+  <div id="loading" class="screen">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <h2>앱으로 이동 중...</h2>
+      <p>잠시만 기다려주세요</p>
+    </div>
+  </div>
+
+  <!-- 앱 미설치 시 표시 -->
+  <div id="fallback" class="screen" style="display: none;">
+    <div class="container">
+      <h2>📱 앱에서 더 편리하게!</h2>
+      <p>Lupin을 설치하고 새로운 기회를 만나보세요.</p>
+
+      <div class="app-preview">
+        <div class="post-preview">
+          <h3 id="post-title">게시물 로딩 중...</h3>
+          <p id="post-summary">게시물 내용을 미리 확인하세요</p>
+        </div>
+      </div>
+
+      <div class="download-buttons">
+        <a href="https://play.google.com/store/apps/details?id=com.lupin.app" class="btn android" target="_blank">📱 Android 앱 설치</a>
+        <a href="https://apps.apple.com/app/id1234567890" class="btn ios" target="_blank">🍎 iOS 앱 설치</a>
+      </div>
+
+      <div class="alternative">
+        <button id="open-web" class="btn-text">웹에서 계속 보기 →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/redirect.js"></script>
+</body>
+</html>
