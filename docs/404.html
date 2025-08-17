@@ -57,27 +57,25 @@
         var intentUrl = 'intent://' + (id ? ('post/' + encodeURIComponent(id)) : '') +
           '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(fallbackAndroid) + ';end';
 
+        // Android: intent 먼저 (항상 host 포함)
+        if (isAndroid) {
+          var intentFirst = 'intent://post' + (id ? ('/' + encodeURIComponent(id)) : '') +
+            '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(fallbackAndroid) + ';end';
+          try { window.location.href = intentFirst; } catch (_) {}
+          return true;
+        }
+
+        // iOS 등: 스킴 우선 → 실패 시 App Store 또는 웹 폴백
         var started = Date.now();
         var timer = setTimeout(function () {
-          // If still here within 1.2s, try Android intent as secondary
-          // Then fallback to web (홈 또는 게시글)
-          if (isAndroid) {
-            try { window.location.href = intentUrl; } catch (_) {}
-            // intent의 fallback이 Play 스토어로 처리되므로 추가 웹 폴백은 대기
+          if (IOS_STORE && typeof IOS_STORE === 'string' && IOS_STORE.length > 0) {
+            try { window.location.href = IOS_STORE; } catch (_) { openWeb(id); }
           } else {
-            // iOS: 미설치 시 App Store로 보내고, 미설치 URL이 없다면 웹 폴백
-            if (IOS_STORE && typeof IOS_STORE === 'string' && IOS_STORE.length > 0) {
-              try { window.location.href = IOS_STORE; } catch (_) { openWeb(id); }
-            } else {
-              openWeb(id);
-            }
+            openWeb(id);
           }
         }, 1200);
 
-        // Prefer direct navigation to increase success in in-app browsers
         try { window.location.href = schemeUrl; } catch (_) {}
-
-        // If visibility changes (app switch), cancel fallback
         document.addEventListener('visibilitychange', function () {
           if (document.hidden) clearTimeout(timer);
         });

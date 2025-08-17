@@ -41,28 +41,27 @@
     const id = extractId();
     const schemeUrl = id ? (`lupin://post/${encodeURIComponent(id)}`) : 'lupin://post';
 
-    // Android intent: 미설치 시 Play 스토어로 유도
+    // Android intent: 항상 host 포함(post), 미설치 시 Play 스토어
     const fallbackWeb = (window.location.origin + '/lupin/' + (id ? ('#/post/' + encodeURIComponent(id)) : ''));
-    const intentUrl = 'intent://' + (id ? ('post/' + encodeURIComponent(id)) : '') +
+    const intentUrl = 'intent://post' + (id ? ('/' + encodeURIComponent(id)) : '') +
       '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(ANDROID_STORE || fallbackWeb) + ';end';
 
-    const start = Date.now();
+    if (IS_ANDROID) {
+      // Android: intent 먼저 시도 → 설치 시 바로 앱, 미설치 시 스토어
+      try { window.location.href = intentUrl; } catch(_) {}
+      return;
+    }
+
+    // iOS 등: 스킴 우선 → 실패 시 App Store 또는 웹 폴백
     const timer = setTimeout(() => {
-      if (IS_ANDROID) {
-        try { window.location.href = intentUrl; } catch(_) {}
+      if (IOS_STORE) {
+        try { window.location.href = IOS_STORE; } catch(_) { openWeb(id); }
       } else {
-        if (IOS_STORE) {
-          try { window.location.href = IOS_STORE; } catch(_) { openWeb(id); }
-        } else {
-          openWeb(id);
-        }
+        openWeb(id);
       }
     }, 1200);
 
-    // 스킴 우선 시도
     try { window.location.href = schemeUrl; } catch(_) {}
-
-    // 앱 전환 시 타이머 해제
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) clearTimeout(timer);
     }, { once: true });

@@ -12,7 +12,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="/lupin/">
+  <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -106,18 +106,22 @@
 
       function tryOpenHome(){
         var schemeUrl = 'lupin://post'; // matches AndroidManifest (scheme=lupin, host=post)
-        var intentUrl = 'intent://' + '#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(ANDROID_STORE) + ';end';
+        var intentUrl = 'intent://post#Intent;scheme=lupin;package=com.lupin.app;S.browser_fallback_url=' + encodeURIComponent(ANDROID_STORE) + ';end';
 
+        if (IS_ANDROID) {
+          // Android: intent 먼저 시도 → 설치 시 앱 홈, 미설치 시 Play 스토어
+          try { window.location.href = intentUrl; } catch(_) {}
+          return;
+        }
+
+        // iOS 등: 스킴 우선 → 실패 시 App Store로 폴백(없으면 무시)
         var timer = setTimeout(function(){
-          if (IS_ANDROID) {
-            try { window.location.href = intentUrl; } catch(_) {}
-          } else if (IOS_STORE) {
+          if (IOS_STORE) {
             try { window.location.href = IOS_STORE; } catch(_) {}
           }
         }, 1200);
 
         try { window.location.href = schemeUrl; } catch(_) {}
-
         document.addEventListener('visibilitychange', function onVis(){
           if (document.hidden) clearTimeout(timer);
           document.removeEventListener('visibilitychange', onVis);
