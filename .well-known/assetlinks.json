@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.lupin.app",
+    "sha256_cert_fingerprints": [
+      9C:5F:90:69:36:E3:FD:DF:F1:9F:19:69:5D:FD:44:F1:1C:62:4E:68:22:29:80:82:CD:CB:77:2D:7D:0B:A2:97
+    ]
+  }
+}]
